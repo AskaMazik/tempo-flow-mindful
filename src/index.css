@@ -16,11 +16,11 @@ All colors MUST be HSL.
     --secondary: 220 100% 75%;       /* Twilight blue */
     --accent: 200 100% 80%;          /* Dawn blue */
     
-    /* Neutral Base */
+    /* Neutral Base with Better Contrast */
     --background: 230 15% 8%;        /* Deep space navy */
     --surface: 230 20% 12%;          /* Slightly lighter surface */
-    --foreground: 0 0% 98%;          /* Soft white */
-    --muted-foreground: 220 15% 65%; /* Muted text */
+    --foreground: 0 0% 98%;          /* Bright white for text */
+    --muted-foreground: 0 0% 85%;    /* Light grey instead of dark grey */
     
     /* Card and Surface Colors */
     --card: 230 20% 10%;
