@@ -209,7 +209,7 @@ export default function Running({ config, onReset }: RunningProps) {
                   onClick={handleStop}
                   className="flex-1 py-3 rounded-full text-sm"
                 >
-                  ✕ Exit
+                  Exit
                 </GlassButton>
               </div>
             </>
