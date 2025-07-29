@@ -37,15 +37,22 @@ export const useGPSTracking = ({ onDistanceUpdate, onError }: UseGPSTrackingProp
   // Request location permission
   const requestPermission = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await navigator.permissions.query({ name: 'geolocation' })
-      const granted = result.state === 'granted'
-      setHasPermission(granted)
-      return granted
+      // Actually request permission by trying to get current position
+      await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        })
+      })
+      setHasPermission(true)
+      return true
     } catch (error) {
       setHasPermission(false)
+      onError('Please allow location access for distance tracking')
       return false
     }
-  }, [])
+  }, [onError])
 
   // Start GPS tracking
   const startTracking = useCallback(async (): Promise<boolean> => {
@@ -56,7 +63,6 @@ export const useGPSTracking = ({ onDistanceUpdate, onError }: UseGPSTrackingProp
 
     const permission = await requestPermission()
     if (!permission) {
-      onError('GPS permission denied')
       return false
     }
 

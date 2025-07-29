@@ -53,13 +53,17 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Start GPS tracking when distance-based mode starts
   useEffect(() => {
-    if (!config.isTimeBased && isRunning) {
-      gps.startTracking()
-    } else {
+    if (!config.isTimeBased && isRunning && !gps.isTracking) {
+      gps.startTracking().then(success => {
+        if (!success) {
+          setGpsError("Location access required for distance tracking")
+        }
+      })
+    } else if (config.isTimeBased || !isRunning) {
       gps.stopTracking()
     }
     return () => gps.stopTracking()
-  }, [config.isTimeBased, isRunning])
+  }, [config.isTimeBased, isRunning, gps])
 
   // Phase transition handler
   const handlePhaseTransition = () => {
@@ -195,25 +199,8 @@ export default function Running({ config, onReset }: RunningProps) {
   }
 
   const handlePlayPause = async () => {
-    // Initialize audio on first user interaction
-    if (!audioInitialized) {
-      await initializeAudio()
-    }
-    
-    // Request GPS permission if needed for distance-based workouts
-    if (!config.isTimeBased && !isRunning && !gps.isTracking) {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: false, video: false })
-      } catch (e) {
-        // Ignore audio/video error, we just need user gesture
-      }
-      
-      const started = await gps.startTracking()
-      if (!started) {
-        setGpsError("Please allow location access for distance tracking")
-        return
-      }
-    }
+    // Initialize audio on first user interaction for mobile compatibility
+    await initializeAudio()
     
     setIsRunning(!isRunning)
   }
