@@ -42,9 +42,10 @@ export default function Setup({ onStart }: SetupProps) {
 
   return (
     <div className="min-h-screen bg-gradient-primary flex flex-col p-6 relative overflow-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0 bg-gradient-ethereal opacity-30" />
-      <div className="absolute top-1/3 right-1/4 w-40 h-40 bg-gradient-breath rounded-full blur-3xl opacity-20 animate-float" />
+      {/* Glass morphism background */}
+      <div className="absolute inset-0 bg-gradient-glass" />
+      <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-gradient-primary rounded-full blur-3xl opacity-20 animate-pulse" />
+      <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-accent rounded-full blur-3xl opacity-15 animate-pulse" style={{animationDelay: '1s'}} />
 
       <div className="relative z-10 flex flex-col h-full max-w-md mx-auto w-full">
         {/* Header */}
@@ -59,14 +60,51 @@ export default function Setup({ onStart }: SetupProps) {
 
         {/* Main Content */}
         <div className="flex-1 space-y-6">
+          {/* Preset Buttons */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <GlassButton 
+              variant="glass" 
+              size="sm" 
+              onClick={() => {
+                setIntervalCount([3])
+                setWorkDuration([1])
+                setRestDuration([1])
+              }}
+            >
+              Beginner
+            </GlassButton>
+            <GlassButton 
+              variant="glass" 
+              size="sm"
+              onClick={() => {
+                setIntervalCount([5])
+                setWorkDuration([2])
+                setRestDuration([1])
+              }}
+            >
+              Standard
+            </GlassButton>
+            <GlassButton 
+              variant="glass" 
+              size="sm"
+              onClick={() => {
+                setIntervalCount([8])
+                setWorkDuration([3])
+                setRestDuration([1])
+              }}
+            >
+              Advanced
+            </GlassButton>
+          </div>
+
           {/* Interval Count */}
-          <Card className="p-6 bg-white/5 backdrop-blur-md border-white/20">
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-foreground font-light text-lg">
                   Intervals
                 </Label>
-                <span className="text-foreground font-medium text-xl">
+                <span className="text-foreground font-bold text-3xl">
                   {intervalCount[0]}
                 </span>
               </div>
@@ -82,7 +120,7 @@ export default function Setup({ onStart }: SetupProps) {
           </Card>
 
           {/* Time vs Distance Toggle */}
-          <Card className="p-6 bg-white/5 backdrop-blur-md border-white/20">
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -104,13 +142,13 @@ export default function Setup({ onStart }: SetupProps) {
           </Card>
 
           {/* Work Duration */}
-          <Card className="p-6 bg-white/5 backdrop-blur-md border-white/20">
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-accent font-light text-lg">
-                  Work {isTimeBased ? "Time" : "Distance"}
+                  RUN {isTimeBased ? "Time" : "Distance"}
                 </Label>
-                <span className="text-accent font-medium text-xl">
+                <span className="text-accent font-bold text-3xl">
                   {isTimeBased 
                     ? `${workDuration[0]}m`
                     : `${workDuration[0]}m`
@@ -129,13 +167,13 @@ export default function Setup({ onStart }: SetupProps) {
           </Card>
 
           {/* Rest Duration */}
-          <Card className="p-6 bg-white/5 backdrop-blur-md border-white/20">
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-primary font-light text-lg">
-                  Recovery {isTimeBased ? "Time" : "Distance"}
+                  BREATHE {isTimeBased ? "Time" : "Distance"}
                 </Label>
-                <span className="text-primary font-medium text-xl">
+                <span className="text-primary font-bold text-3xl">
                   {isTimeBased 
                     ? `${restDuration[0]}m`
                     : `${restDuration[0]}m`
@@ -154,7 +192,7 @@ export default function Setup({ onStart }: SetupProps) {
           </Card>
 
           {/* Audio Toggle */}
-          <Card className="p-6 bg-white/5 backdrop-blur-md border-white/20">
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -175,11 +213,14 @@ export default function Setup({ onStart }: SetupProps) {
             </div>
           </Card>
 
-          {/* Session Summary */}
-          <Card className="p-4 bg-gradient-ethereal backdrop-blur-sm border-primary/30">
-            <div className="text-center space-y-2">
-              <p className="text-muted-foreground">Total Session</p>
-              <p className="text-2xl font-light text-foreground">
+          {/* Session Preview */}
+          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--gradient-card)', boxShadow: 'var(--glass-shadow)'}}>
+            <div className="text-center space-y-3">
+              <p className="text-muted-foreground text-sm">Session Preview</p>
+              <p className="text-lg font-light text-foreground">
+                {intervalCount[0]} intervals × {workDuration[0]}m run + {restDuration[0]}m breathe
+              </p>
+              <p className="text-4xl font-bold text-foreground">
                 ~{totalTime} minutes
               </p>
             </div>

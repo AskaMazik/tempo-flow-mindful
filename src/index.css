@@ -10,17 +10,18 @@ All colors MUST be HSL.
   :root {
     /* RHYTHM Design System - Mindful Running App */
     
-    /* Core Brand Colors - Purple to Blue Gradients */
-    --primary: 267 84% 70%;           /* Soft purple */
-    --primary-glow: 240 100% 85%;    /* Light purple glow */
-    --secondary: 220 100% 75%;       /* Twilight blue */
-    --accent: 200 100% 80%;          /* Dawn blue */
+    /* Core Brand Colors - Glass Morphism Purple-Orange */
+    --primary: 280 85% 70%;           /* Rich purple */
+    --primary-glow: 285 95% 85%;     /* Light purple glow */
+    --secondary: 265 80% 65%;        /* Deep purple */
+    --accent: 25 95% 70%;            /* Warm orange */
+    --accent-soft: 35 90% 80%;       /* Soft orange */
     
-    /* Neutral Base with Better Contrast */
-    --background: 230 15% 8%;        /* Deep space navy */
-    --surface: 230 20% 12%;          /* Slightly lighter surface */
+    /* Neutral Base with Glass Morphism */
+    --background: 260 20% 5%;        /* Very dark purple-black */
+    --surface: 270 25% 8%;           /* Dark glass surface */
     --foreground: 0 0% 98%;          /* Bright white for text */
-    --muted-foreground: 0 0% 85%;    /* Light grey instead of dark grey */
+    --muted-foreground: 0 0% 75%;    /* Softer grey for secondary text */
     
     /* Card and Surface Colors */
     --card: 230 20% 10%;
@@ -35,15 +36,17 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Gradient Variables */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-    --gradient-ethereal: linear-gradient(180deg, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3));
-    --gradient-breath: radial-gradient(circle, hsl(var(--primary-glow) / 0.4), transparent 70%);
+    /* Glass Morphism Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --gradient-glass: linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.2));
+    --gradient-background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--surface)));
+    --gradient-card: linear-gradient(135deg, hsl(var(--foreground) / 0.05), hsl(var(--foreground) / 0.1));
     
-    /* Glass Morphism */
-    --glass-bg: hsl(var(--foreground) / 0.1);
-    --glass-border: hsl(var(--foreground) / 0.2);
-    --glass-blur: blur(20px);
+    /* Glass Morphism Effects */
+    --glass-bg: hsl(var(--foreground) / 0.08);
+    --glass-border: hsl(var(--foreground) / 0.12);
+    --glass-blur: blur(24px);
+    --glass-shadow: 0 8px 32px 0 hsl(var(--primary) / 0.15);
     
     /* Shadows and Effects */
     --shadow-zen: 0 20px 60px -15px hsl(var(--primary) / 0.3);

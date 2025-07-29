@@ -1,6 +1,8 @@
 import { useState } from "react"
 import Setup, { IntervalConfig } from "./Setup"
 import Running from "./Running"
+import Countdown from "./Countdown"
+import Complete from "./Complete"
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<"setup" | "running">("setup")

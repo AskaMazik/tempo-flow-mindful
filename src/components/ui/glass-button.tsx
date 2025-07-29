@@ -8,15 +8,14 @@ const glassButtonVariants = cva(
     variants: {
       variant: {
         ethereal: [
-          "bg-gradient-primary backdrop-blur-md border border-white/20",
-          "text-foreground shadow-zen",
-          "hover:shadow-breath hover:scale-105",
+          "bg-gradient-primary backdrop-blur-md border-0",
+          "text-foreground font-semibold",
+          "hover:scale-105 transition-all duration-300",
           "active:scale-95"
         ],
         glass: [
-          "bg-white/10 backdrop-blur-md border border-white/20",
-          "text-foreground shadow-lg",
-          "hover:bg-white/20 hover:shadow-breath",
+          "backdrop-blur-md border-0 text-foreground font-medium",
+          "hover:scale-105 transition-all duration-300",
           "active:scale-95"
         ],
         zen: [
@@ -50,9 +49,12 @@ const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
       <button
         className={cn(glassButtonVariants({ variant, size, className }))}
         ref={ref}
+        style={{ 
+          ...(variant === 'glass' && { background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)' })
+        }}
         {...props}
       >
-        <div className="absolute inset-0 bg-gradient-breath opacity-0 hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300" style={{background: 'var(--glass-bg)'}} />
         <span className="relative z-10">{children}</span>
       </button>
     )
