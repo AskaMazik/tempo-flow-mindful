@@ -10,20 +10,20 @@ const glassButtonVariants = cva(
         ethereal: [
           "bg-white/20 backdrop-blur-md border border-white/30",
           "text-white font-semibold",
-          "hover:bg-white/30 hover:scale-105 transition-all duration-300",
+          "hover:bg-white/50 hover:scale-105 transition-all duration-300",
           "active:scale-95 shadow-[0_8px_32px_0_rgba(255,255,255,0.1)]"
         ],
         glass: [
           "bg-white/10 backdrop-blur-md border border-white/20",
           "text-white font-medium",
-          "hover:bg-white/20 hover:scale-105 transition-all duration-300",
+          "hover:bg-white/40 hover:scale-105 transition-all duration-300",
           "active:scale-95"
         ],
-        zen: [
-          "bg-gradient-ethereal backdrop-blur-sm border border-primary/30",
-          "text-foreground shadow-zen",
-          "hover:shadow-glow-pulse hover:border-primary/50",
-          "active:scale-95"
+        primary: [
+          "bg-green-500 backdrop-blur-md border-0",
+          "text-white font-semibold",
+          "hover:bg-green-400 hover:scale-105 transition-all duration-300",
+          "active:scale-95 shadow-[0_8px_32px_0_rgba(34,197,94,0.3)]"
         ]
       },
       size: {

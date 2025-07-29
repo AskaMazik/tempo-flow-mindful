@@ -137,42 +137,42 @@ export default function Running({ config, onReset }: RunningProps) {
       />
 
       <div className="relative z-10 flex flex-col h-full p-6 max-w-md mx-auto w-full">
-        {/* Minimalist Layout */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-8 text-center">
+        {/* Minimalist Layout - Exact Match to Screenshot */}
+        <div className="flex-1 flex flex-col items-center justify-center space-y-12 text-center">
           {/* Interval Progress */}
-          <div className="space-y-4">
-            <p className="text-white/70 text-lg">Interval</p>
-            <h1 className="text-6xl font-light text-white">
+          <div className="space-y-6">
+            <p className="text-white/70 text-lg font-light">Interval</p>
+            <h1 className="text-7xl font-extralight text-white tracking-wide">
               {currentInterval} of {config.intervalCount}
             </h1>
           </div>
 
           {/* Phase Indicator */}
-          <div className="space-y-6">
-            <h2 className="text-3xl font-light text-white/90 tracking-wider">
+          <div className="space-y-8">
+            <h2 className="text-2xl font-light text-white/80 tracking-[0.3em] uppercase">
               {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "COMPLETE"}
             </h2>
             
             {/* Timer */}
-            <div className="text-8xl font-light text-white">
+            <div className="text-9xl font-extralight text-white tracking-tight">
               {formatTime(timeRemaining)}
             </div>
-            <p className="text-white/60 text-lg">remaining</p>
+            <p className="text-white/60 text-lg font-light">remaining</p>
           </div>
 
           {/* Progress Bar */}
           {currentPhase !== "complete" && (
-            <div className="w-full max-w-xs space-y-4">
+            <div className="w-full max-w-sm space-y-6">
               <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-white/60 transition-all duration-1000 ease-out"
+                  className="h-full bg-white/70 transition-all duration-1000 ease-out rounded-full"
                   style={{ width: `${getProgressPercentage()}%` }}
                 />
               </div>
               
               {/* Next Phase Indicator */}
-              <div className="inline-block px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md">
-                <span className="text-white/80 text-sm">
+              <div className="inline-block px-6 py-3 bg-white/15 rounded-full border border-white/25 backdrop-blur-md">
+                <span className="text-white/90 text-base font-light">
                   Next: {currentPhase === "work" ? "Easy Pace" : "Fast Pace"}
                 </span>
               </div>
@@ -180,44 +180,44 @@ export default function Running({ config, onReset }: RunningProps) {
           )}
         </div>
 
-        {/* Controls */}
-        <div className="space-y-4 pb-6">
+        {/* Controls - Bottom Section */}
+        <div className="space-y-4 pb-8">
           {currentPhase !== "complete" ? (
             <>
-              {/* Main Play/Pause */}
+              {/* Main Resume/Start Button - Green like in screenshot */}
               <GlassButton
-                variant="ethereal"
+                variant="primary"
                 size="xl"
                 onClick={handlePlayPause}
-                className="w-full text-xl py-4"
+                className="w-full text-xl py-6 rounded-full"
               >
-                {isRunning ? "Pause" : "Start"}
+                ▶ {isRunning ? "Pause" : "Resume"}
               </GlassButton>
 
               {/* Secondary Controls */}
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <GlassButton
                   variant="glass"
                   size="lg"
                   onClick={handleReset}
-                  className="flex-1"
+                  className="flex-1 py-4 rounded-full"
                 >
-                  Reset
+                  🔄 Reset
                 </GlassButton>
                 <GlassButton
                   variant="glass"
                   size="lg"
                   onClick={handleStop}
-                  className="flex-1"
+                  className="flex-1 py-4 rounded-full"
                 >
-                  Exit
+                  ✕ Exit
                 </GlassButton>
               </div>
             </>
           ) : (
             /* Session Complete */
             <div className="space-y-4 text-center">
-              <div className="py-6">
+              <div className="py-8">
                 <h2 className="text-4xl font-light text-white mb-4">
                   Well Done!
                 </h2>
@@ -227,10 +227,10 @@ export default function Running({ config, onReset }: RunningProps) {
               </div>
               
               <GlassButton
-                variant="ethereal"
+                variant="primary"
                 size="xl"
                 onClick={handleReset}
-                className="w-full"
+                className="w-full rounded-full"
               >
                 New Session
               </GlassButton>
@@ -239,7 +239,7 @@ export default function Running({ config, onReset }: RunningProps) {
                 variant="glass"
                 size="lg"
                 onClick={handleStop}
-                className="w-full"
+                className="w-full rounded-full"
               >
                 Back to Setup
               </GlassButton>
