@@ -91,18 +91,18 @@ export default function Setup({ onStart }: SetupProps) {
               </Label>
               <div className="flex gap-2">
                 <GlassButton 
-                  variant={isTimeBased ? "ethereal" : "glass"}
+                  variant="glass"
                   size="sm"
                   onClick={() => setIsTimeBased(true)}
-                  className="flex-1"
+                  className={`flex-1 ${isTimeBased ? 'bg-white/40' : ''}`}
                 >
                   Time
                 </GlassButton>
                 <GlassButton 
-                  variant={!isTimeBased ? "ethereal" : "glass"}
+                  variant="glass"
                   size="sm"
                   onClick={() => setIsTimeBased(false)}
-                  className="flex-1"
+                  className={`flex-1 ${!isTimeBased ? 'bg-white/40' : ''}`}
                 >
                   Distance
                 </GlassButton>
