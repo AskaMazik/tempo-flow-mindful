@@ -137,70 +137,51 @@ export default function Running({ config, onReset }: RunningProps) {
       />
 
       <div className="relative z-10 flex flex-col h-full p-6 max-w-md mx-auto w-full">
-        {/* Interval Progress */}
-        <div className="py-8 text-center">
-          <p className="text-muted-foreground mb-2">Interval</p>
-          <h1 className="text-4xl font-light text-foreground">
-            {currentInterval} of {config.intervalCount}
-          </h1>
-        </div>
+        {/* Minimalist Layout */}
+        <div className="flex-1 flex flex-col items-center justify-center space-y-8 text-center">
+          {/* Interval Progress */}
+          <div className="space-y-4">
+            <p className="text-white/70 text-lg">Interval</p>
+            <h1 className="text-6xl font-light text-white">
+              {currentInterval} of {config.intervalCount}
+            </h1>
+          </div>
 
-        {/* Main Timer Display */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-12">
-          {/* Phase Indicator with Circular Progress */}
-          <Card className="p-8 backdrop-blur-md border-0 text-center" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
-            <div 
-              className="text-6xl font-bold mb-4 animate-pulse transition-colors duration-1000"
-              style={{
-                color: currentPhase === "work" ? 'hsl(var(--accent))' : 'hsl(var(--primary))',
-                textShadow: currentPhase === "work" 
-                  ? '0 0 40px hsl(var(--accent) / 0.5)' 
-                  : '0 0 40px hsl(var(--primary) / 0.5)'
-              }}
-            >
-              {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "DONE"}
-            </div>
+          {/* Phase Indicator */}
+          <div className="space-y-6">
+            <h2 className="text-3xl font-light text-white/90 tracking-wider">
+              {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "COMPLETE"}
+            </h2>
             
-            {/* Circular Progress Container */}
-            <div className="relative w-40 h-40 mx-auto mb-6">
-              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 144 144">
-                <circle cx="72" cy="72" r="64" stroke="hsl(var(--foreground) / 0.1)" strokeWidth="8" fill="none" />
-                <circle
-                  cx="72" cy="72" r="64"
-                  stroke={currentPhase === "work" ? 'hsl(var(--accent))' : 'hsl(var(--primary))'}
-                  strokeWidth="8" fill="none" strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 64}`}
-                  strokeDashoffset={`${2 * Math.PI * 64 * (1 - getProgressPercentage() / 100)}`}
-                  className="transition-all duration-1000"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
+            {/* Timer */}
+            <div className="text-8xl font-light text-white">
+              {formatTime(timeRemaining)}
+            </div>
+            <p className="text-white/60 text-lg">remaining</p>
+          </div>
+
+          {/* Progress Bar */}
+          {currentPhase !== "complete" && (
+            <div className="w-full max-w-xs space-y-4">
+              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
                 <div 
-                  className="text-4xl font-bold animate-pulse transition-colors duration-1000"
-                  style={{color: currentPhase === "work" ? 'hsl(var(--accent))' : 'hsl(var(--primary))'}}
-                >
-                  {formatTime(timeRemaining)}
-                </div>
+                  className="h-full bg-white/60 transition-all duration-1000 ease-out"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                />
+              </div>
+              
+              {/* Next Phase Indicator */}
+              <div className="inline-block px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-md">
+                <span className="text-white/80 text-sm">
+                  Next: {currentPhase === "work" ? "Easy Pace" : "Fast Pace"}
+                </span>
               </div>
             </div>
-          </Card>
-
-          {/* Session Progress */}
-          {currentPhase !== "complete" && (
-            <Card className="p-4 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Session Progress</span>
-                  <span>{Math.round((currentInterval - 1 + (currentPhase === "recover" ? 1 : 0)) / config.intervalCount * 100)}%</span>
-                </div>
-                <Progress value={(currentInterval - 1 + (currentPhase === "recover" ? 1 : 0)) / config.intervalCount * 100} className="h-2" />
-              </div>
-            </Card>
           )}
         </div>
 
         {/* Controls */}
-        <div className="py-6 space-y-4">
+        <div className="space-y-4 pb-6">
           {currentPhase !== "complete" ? (
             <>
               {/* Main Play/Pause */}
@@ -208,13 +189,8 @@ export default function Running({ config, onReset }: RunningProps) {
                 variant="ethereal"
                 size="xl"
                 onClick={handlePlayPause}
-                className="w-full"
+                className="w-full text-xl py-4"
               >
-                {isRunning ? (
-                  <Pause className="w-8 h-8 mr-3" />
-                ) : (
-                  <Play className="w-8 h-8 mr-3" />
-                )}
                 {isRunning ? "Pause" : "Start"}
               </GlassButton>
 
@@ -226,7 +202,6 @@ export default function Running({ config, onReset }: RunningProps) {
                   onClick={handleReset}
                   className="flex-1"
                 >
-                  <RotateCcw className="w-5 h-5 mr-2" />
                   Reset
                 </GlassButton>
                 <GlassButton
@@ -235,7 +210,6 @@ export default function Running({ config, onReset }: RunningProps) {
                   onClick={handleStop}
                   className="flex-1"
                 >
-                  <Square className="w-5 h-5 mr-2" />
                   Exit
                 </GlassButton>
               </div>
@@ -244,11 +218,11 @@ export default function Running({ config, onReset }: RunningProps) {
             /* Session Complete */
             <div className="space-y-4 text-center">
               <div className="py-6">
-                <h2 className="text-3xl font-light text-foreground mb-4">
-                  Session Complete!
+                <h2 className="text-4xl font-light text-white mb-4">
+                  Well Done!
                 </h2>
-                <p className="text-muted-foreground text-lg">
-                  {config.intervalCount} intervals finished
+                <p className="text-white/70 text-lg">
+                  {config.intervalCount} intervals completed
                 </p>
               </div>
               
