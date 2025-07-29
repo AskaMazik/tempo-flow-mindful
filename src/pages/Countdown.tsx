@@ -19,7 +19,7 @@ export default function Countdown({ onComplete, onCancel }: CountdownProps) {
   }, [count, onComplete])
 
   return (
-    <div className="min-h-screen bg-gradient-primary flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden" style={{background: 'linear-gradient(135deg, #9b59b6 0%, #5dade2 100%)'}}>
       {/* Glass morphism background */}
       <div className="absolute inset-0 bg-gradient-glass" />
       <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-gradient-primary rounded-full blur-3xl opacity-20 animate-pulse" />

@@ -124,14 +124,8 @@ export default function Running({ config, onReset }: RunningProps) {
 
     return (
     <div 
-      className="min-h-screen flex flex-col relative overflow-hidden transition-all duration-1000"
-      style={{
-        background: currentPhase === "work" 
-          ? 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-soft)))' 
-          : currentPhase === "recover"
-          ? 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))'
-          : 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))'
-      }}
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{background: 'linear-gradient(135deg, #9b59b6 0%, #5dade2 100%)'}}
     >
       {/* Glass morphism background */}
       <div className="absolute inset-0 bg-gradient-glass opacity-30" />
@@ -164,7 +158,7 @@ export default function Running({ config, onReset }: RunningProps) {
                   : '0 0 40px hsl(var(--primary) / 0.5)'
               }}
             >
-              {currentPhase === "work" ? "RUN" : currentPhase === "recover" ? "BREATHE" : "DONE"}
+              {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "DONE"}
             </div>
             
             {/* Circular Progress Container */}

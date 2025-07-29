@@ -41,7 +41,7 @@ export default function Setup({ onStart }: SetupProps) {
     : Math.round(((workDuration[0] + restDuration[0]) * intervalCount[0]) / 200) // rough estimate
 
   return (
-    <div className="min-h-screen bg-gradient-primary flex flex-col p-6 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col p-6 relative overflow-hidden" style={{background: 'linear-gradient(135deg, #9b59b6 0%, #5dade2 100%)'}}>
       {/* Glass morphism background */}
       <div className="absolute inset-0 bg-gradient-glass" />
       <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-gradient-primary rounded-full blur-3xl opacity-20 animate-pulse" />
@@ -50,52 +50,16 @@ export default function Setup({ onStart }: SetupProps) {
       <div className="relative z-10 flex flex-col h-full max-w-md mx-auto w-full">
         {/* Header */}
         <div className="text-center py-8">
-          <h1 className="text-4xl font-light text-foreground tracking-wide mb-2">
+          <h1 className="text-4xl font-light text-white tracking-wide mb-2">
             RHYTHM
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Pure Interval Running
+          <p className="text-white/80 text-lg">
+            Find Your Flow
           </p>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 space-y-6">
-          {/* Preset Buttons */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <GlassButton 
-              variant="glass" 
-              size="sm" 
-              onClick={() => {
-                setIntervalCount([3])
-                setWorkDuration([1])
-                setRestDuration([1])
-              }}
-            >
-              Beginner
-            </GlassButton>
-            <GlassButton 
-              variant="glass" 
-              size="sm"
-              onClick={() => {
-                setIntervalCount([5])
-                setWorkDuration([2])
-                setRestDuration([1])
-              }}
-            >
-              Standard
-            </GlassButton>
-            <GlassButton 
-              variant="glass" 
-              size="sm"
-              onClick={() => {
-                setIntervalCount([8])
-                setWorkDuration([3])
-                setRestDuration([1])
-              }}
-            >
-              Advanced
-            </GlassButton>
-          </div>
 
           {/* Interval Count */}
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
@@ -119,36 +83,41 @@ export default function Setup({ onStart }: SetupProps) {
             </div>
           </Card>
 
-          {/* Time vs Distance Toggle */}
+          {/* Measurement Toggle */}
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {isTimeBased ? (
-                    <Timer className="w-5 h-5 text-primary" />
-                  ) : (
-                    <MapPin className="w-5 h-5 text-accent" />
-                  )}
-                  <Label className="text-foreground font-light text-lg">
-                    {isTimeBased ? "Time-Based" : "Distance-Based"}
-                  </Label>
-                </div>
-                <Switch 
-                  checked={isTimeBased} 
-                  onCheckedChange={setIsTimeBased}
-                />
+              <Label className="text-white font-light text-lg block mb-4">
+                Measurement
+              </Label>
+              <div className="flex gap-2">
+                <GlassButton 
+                  variant={isTimeBased ? "ethereal" : "glass"}
+                  size="sm"
+                  onClick={() => setIsTimeBased(true)}
+                  className="flex-1"
+                >
+                  Time
+                </GlassButton>
+                <GlassButton 
+                  variant={!isTimeBased ? "ethereal" : "glass"}
+                  size="sm"
+                  onClick={() => setIsTimeBased(false)}
+                  className="flex-1"
+                >
+                  Distance
+                </GlassButton>
               </div>
             </div>
           </Card>
 
-          {/* Work Duration */}
+          {/* Fast Pace Duration */}
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label className="text-accent font-light text-lg">
-                  RUN {isTimeBased ? "Time" : "Distance"}
+                <Label className="text-white font-light text-lg">
+                  Fast Pace
                 </Label>
-                <span className="text-accent font-bold text-3xl">
+                <span className="text-white font-bold text-3xl">
                   {isTimeBased 
                     ? `${workDuration[0]}m`
                     : `${workDuration[0]}m`
@@ -166,14 +135,14 @@ export default function Setup({ onStart }: SetupProps) {
             </div>
           </Card>
 
-          {/* Rest Duration */}
+          {/* Easy Pace Duration */}
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label className="text-primary font-light text-lg">
-                  BREATHE {isTimeBased ? "Time" : "Distance"}
+                <Label className="text-white font-light text-lg">
+                  Easy Pace
                 </Label>
-                <span className="text-primary font-bold text-3xl">
+                <span className="text-white font-bold text-3xl">
                   {isTimeBased 
                     ? `${restDuration[0]}m`
                     : `${restDuration[0]}m`
@@ -191,20 +160,13 @@ export default function Setup({ onStart }: SetupProps) {
             </div>
           </Card>
 
-          {/* Audio Toggle */}
+          {/* Sound Guidance Toggle */}
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {audioEnabled ? (
-                    <Volume2 className="w-5 h-5 text-foreground" />
-                  ) : (
-                    <VolumeX className="w-5 h-5 text-muted-foreground" />
-                  )}
-                  <Label className="text-foreground font-light text-lg">
-                    Audio Cues
-                  </Label>
-                </div>
+                <Label className="text-white font-light text-lg">
+                  Sound Guidance
+                </Label>
                 <Switch 
                   checked={audioEnabled} 
                   onCheckedChange={setAudioEnabled}
@@ -213,18 +175,13 @@ export default function Setup({ onStart }: SetupProps) {
             </div>
           </Card>
 
-          {/* Session Preview */}
-          <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--gradient-card)', boxShadow: 'var(--glass-shadow)'}}>
-            <div className="text-center space-y-3">
-              <p className="text-muted-foreground text-sm">Session Preview</p>
-              <p className="text-lg font-light text-foreground">
-                {intervalCount[0]} intervals × {workDuration[0]}m run + {restDuration[0]}m breathe
-              </p>
-              <p className="text-4xl font-bold text-foreground">
-                ~{totalTime} minutes
-              </p>
-            </div>
-          </Card>
+          {/* Total Session */}
+          <div className="text-center space-y-3 pt-6">
+            <p className="text-white/70 text-lg">Total Session</p>
+            <p className="text-4xl font-bold text-white">
+              ~{totalTime} minutes
+            </p>
+          </div>
         </div>
 
         {/* Start Button */}
@@ -235,7 +192,7 @@ export default function Setup({ onStart }: SetupProps) {
             className="w-full"
             onClick={handleStart}
           >
-            Start Interval Run
+            Begin Session
           </GlassButton>
         </div>
       </div>
