@@ -136,34 +136,33 @@ export default function Running({ config, onReset }: RunningProps) {
         }}
       />
 
-      <div className="relative z-10 flex flex-col h-full p-6 max-w-md mx-auto w-full">
-        {/* Minimalist Layout - Exact Match to Screenshot */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-12 text-center">
+      <div className="running-container">
+        {/* Compact centered layout */}
+        <div className="flex flex-col items-center justify-center text-center">
           {/* Interval Progress */}
-          <div className="space-y-6">
-            <p className="text-white/70 text-lg font-light">Interval</p>
-            <h1 className="text-7xl font-extralight text-white tracking-wide">
+          <div className="mb-4">
+            <p className="text-white/70 text-lg font-light mb-2">Interval</p>
+            <h1 className="interval-count text-white">
               {currentInterval} of {config.intervalCount}
             </h1>
           </div>
 
           {/* Phase Indicator */}
-          <div className="space-y-8">
-            <h2 className="text-2xl font-light text-white/80 tracking-[0.3em] uppercase">
-              {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "COMPLETE"}
-            </h2>
-            
-            {/* Timer */}
-            <div className="text-9xl font-extralight text-white tracking-tight">
-              {formatTime(timeRemaining)}
-            </div>
-            <p className="text-white/60 text-lg font-light">remaining</p>
+          <div className="phase-display text-white/80 uppercase">
+            {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "COMPLETE"}
           </div>
+          
+          {/* Countdown Timer */}
+          <div className="countdown-time text-white">
+            {formatTime(timeRemaining)}
+          </div>
+          
+          <p className="text-white/60 text-base font-light mb-6">remaining</p>
 
           {/* Progress Bar */}
           {currentPhase !== "complete" && (
-            <div className="w-full max-w-sm space-y-6">
-              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+            <div className="w-full max-w-sm mb-6">
+              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden mb-4">
                 <div 
                   className="h-full bg-white/70 transition-all duration-1000 ease-out rounded-full"
                   style={{ width: `${getProgressPercentage()}%` }}
@@ -171,8 +170,8 @@ export default function Running({ config, onReset }: RunningProps) {
               </div>
               
               {/* Next Phase Indicator */}
-              <div className="inline-block px-6 py-3 bg-white/15 rounded-full border border-white/25 backdrop-blur-md">
-                <span className="text-white/90 text-base font-light">
+              <div className="inline-block px-6 py-2 bg-white/15 rounded-full border border-white/25 backdrop-blur-md">
+                <span className="text-white/90 text-sm font-light">
                   Next: {currentPhase === "work" ? "Easy Pace" : "Fast Pace"}
                 </span>
               </div>
@@ -181,26 +180,26 @@ export default function Running({ config, onReset }: RunningProps) {
         </div>
 
         {/* Controls - Bottom Section */}
-        <div className="space-y-4 pb-8">
+        <div className="w-full max-w-sm space-y-3 mt-8">
           {currentPhase !== "complete" ? (
             <>
-              {/* Main Resume/Start Button - Green like in screenshot */}
+              {/* Main Resume/Start Button */}
               <GlassButton
                 variant="primary"
                 size="xl"
                 onClick={handlePlayPause}
-                className="w-full text-xl py-6 rounded-full"
+                className="w-full text-lg py-4 rounded-full"
               >
                 ▶ {isRunning ? "Pause" : "Resume"}
               </GlassButton>
 
               {/* Secondary Controls */}
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <GlassButton
                   variant="glass"
                   size="lg"
                   onClick={handleReset}
-                  className="flex-1 py-4 rounded-full"
+                  className="flex-1 py-3 rounded-full text-sm"
                 >
                   🔄 Reset
                 </GlassButton>
@@ -208,7 +207,7 @@ export default function Running({ config, onReset }: RunningProps) {
                   variant="glass"
                   size="lg"
                   onClick={handleStop}
-                  className="flex-1 py-4 rounded-full"
+                  className="flex-1 py-3 rounded-full text-sm"
                 >
                   ✕ Exit
                 </GlassButton>
@@ -217,11 +216,11 @@ export default function Running({ config, onReset }: RunningProps) {
           ) : (
             /* Session Complete */
             <div className="space-y-4 text-center">
-              <div className="py-8">
-                <h2 className="text-4xl font-light text-white mb-4">
+              <div className="py-6">
+                <h2 className="text-3xl font-light text-white mb-3">
                   Well Done!
                 </h2>
-                <p className="text-white/70 text-lg">
+                <p className="text-white/70 text-base">
                   {config.intervalCount} intervals completed
                 </p>
               </div>

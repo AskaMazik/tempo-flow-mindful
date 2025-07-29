@@ -124,4 +124,34 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
-}
+  }
+
+  .running-container {
+    padding: 50px 30px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .countdown-time {
+    font-size: 72px;
+    font-weight: 200;
+    line-height: 1;
+  }
+
+  .phase-display {
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    margin: 15px 0;
+  }
+
+  .interval-count {
+    font-size: 48px;
+    font-weight: 200;
+    margin-bottom: 15px;
+  }
