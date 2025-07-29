@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react"
 import { GlassButton } from "@/components/ui/glass-button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Play, Pause, Square, RotateCcw } from "lucide-react"
+import { Play, Pause, Square, RotateCcw, Zap, ZapOff } from "lucide-react"
 import { IntervalConfig } from "./Setup"
+import { useGPSTracking } from "@/hooks/useGPSTracking"
 
 type SessionPhase = "work" | "recover" | "complete"
 type RunState = "ready" | "running" | "paused"
@@ -20,7 +21,78 @@ export default function Running({ config, onReset }: RunningProps) {
   const [timeRemaining, setTimeRemaining] = useState(
     config.isTimeBased ? config.workDuration * 60 : config.workDuration
   )
+  const [distanceRemaining, setDistanceRemaining] = useState(
+    config.isTimeBased ? 0 : config.workDuration
+  )
+  const [gpsError, setGpsError] = useState<string | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+
+  // GPS tracking hook
+  const gps = useGPSTracking({
+    onDistanceUpdate: (totalDistance, intervalDistance) => {
+      if (!config.isTimeBased && isRunning) {
+        const targetDistance = currentPhase === "work" ? config.workDuration : config.restDuration
+        const remaining = Math.max(0, targetDistance - intervalDistance)
+        setDistanceRemaining(remaining)
+        
+        // Check if interval distance reached
+        if (remaining <= 0) {
+          handlePhaseTransition()
+        }
+      }
+    },
+    onError: (error) => {
+      setGpsError(error)
+      // Fallback to time mode if GPS fails
+      if (!config.isTimeBased) {
+        console.log('GPS failed, continuing with time estimation')
+      }
+    }
+  })
+
+  // Start GPS tracking when distance-based mode starts
+  useEffect(() => {
+    if (!config.isTimeBased && isRunning) {
+      gps.startTracking()
+    } else {
+      gps.stopTracking()
+    }
+    return () => gps.stopTracking()
+  }, [config.isTimeBased, isRunning])
+
+  // Phase transition handler
+  const handlePhaseTransition = () => {
+    if (currentPhase === "work") {
+      // Switch to recovery
+      playChime(600)
+      setCurrentPhase("recover")
+      const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
+      setTimeRemaining(newTarget)
+      setDistanceRemaining(newTarget)
+      if (!config.isTimeBased) {
+        gps.resetIntervalDistance()
+      }
+    } else if (currentPhase === "recover") {
+      if (currentInterval < config.intervalCount) {
+        // Switch to next work interval
+        playChime(800)
+        setCurrentInterval(prev => prev + 1)
+        setCurrentPhase("work")
+        const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
+        setTimeRemaining(newTarget)
+        setDistanceRemaining(newTarget)
+        if (!config.isTimeBased) {
+          gps.resetIntervalDistance()
+        }
+      } else {
+        // Session complete
+        playChime(1000)
+        setCurrentPhase("complete")
+        setIsRunning(false)
+        gps.stopTracking()
+      }
+    }
+  }
 
   // Simple audio chime function
   const playChime = (frequency: number = 800) => {
@@ -51,59 +123,48 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }
 
+  // Timer effect for time-based intervals
   useEffect(() => {
     let interval: NodeJS.Timeout
 
-    if (isRunning && timeRemaining > 0) {
+    if (isRunning && config.isTimeBased && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            // Phase transition logic
-            if (currentPhase === "work") {
-              // Switch to recovery
-              playChime(600) // Lower tone for recovery
-              setCurrentPhase("recover")
-              return config.isTimeBased ? config.restDuration * 60 : config.restDuration
-            } else if (currentPhase === "recover") {
-              if (currentInterval < config.intervalCount) {
-                // Switch to next work interval
-                playChime(800) // Higher tone for work
-                setCurrentInterval(prev => prev + 1)
-                setCurrentPhase("work")
-                return config.isTimeBased ? config.workDuration * 60 : config.workDuration
-              } else {
-                // Session complete
-                playChime(1000) // High completion tone
-                setCurrentPhase("complete")
-                setIsRunning(false)
-                return 0
-              }
-            }
+            handlePhaseTransition()
             return 0
           }
           return prev - 1
         })
-      }, config.isTimeBased ? 1000 : 500) // Faster countdown for distance
+      }, 1000)
     }
 
     return () => clearInterval(interval)
-  }, [isRunning, timeRemaining, currentPhase, currentInterval, config])
+  }, [isRunning, timeRemaining, currentPhase, currentInterval, config.isTimeBased])
 
   const formatTime = (seconds: number) => {
-    if (!config.isTimeBased) {
-      return `${seconds}m`
-    }
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const formatDistance = (meters: number) => {
+    if (meters < 1000) return `${Math.round(meters)}m`
+    return `${(meters / 1000).toFixed(1)}km`
+  }
+
   const getProgressPercentage = () => {
-    const totalPhaseTime = currentPhase === "work" 
-      ? (config.isTimeBased ? config.workDuration * 60 : config.workDuration)
-      : (config.isTimeBased ? config.restDuration * 60 : config.restDuration)
-    
-    return ((totalPhaseTime - timeRemaining) / totalPhaseTime) * 100
+    if (config.isTimeBased) {
+      const totalPhaseTime = currentPhase === "work" 
+        ? config.workDuration * 60
+        : config.restDuration * 60
+      return ((totalPhaseTime - timeRemaining) / totalPhaseTime) * 100
+    } else {
+      const totalPhaseDistance = currentPhase === "work" 
+        ? config.workDuration
+        : config.restDuration
+      return ((totalPhaseDistance - distanceRemaining) / totalPhaseDistance) * 100
+    }
   }
 
   const handlePlayPause = () => {
@@ -115,10 +176,14 @@ export default function Running({ config, onReset }: RunningProps) {
     setCurrentPhase("work")
     setCurrentInterval(1)
     setTimeRemaining(config.isTimeBased ? config.workDuration * 60 : config.workDuration)
+    setDistanceRemaining(config.isTimeBased ? 0 : config.workDuration)
+    gps.resetDistance()
+    setGpsError(null)
   }
 
   const handleStop = () => {
     setIsRunning(false)
+    gps.stopTracking()
     onReset()
   }
 
@@ -154,7 +219,7 @@ export default function Running({ config, onReset }: RunningProps) {
           
           {/* Countdown Timer */}
           <div className="countdown-time text-white">
-            {formatTime(timeRemaining)}
+            {config.isTimeBased ? formatTime(timeRemaining) : formatDistance(distanceRemaining)}
           </div>
           
           <p className="text-white/60 text-base font-light mb-6">remaining</p>
@@ -175,6 +240,34 @@ export default function Running({ config, onReset }: RunningProps) {
                   Next: {currentPhase === "work" ? "Easy Pace" : "Fast Pace"}
                 </span>
               </div>
+
+              {/* GPS Status for distance mode */}
+              {!config.isTimeBased && (
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  {gps.isTracking ? (
+                    <div className="flex items-center gap-1 text-green-400">
+                      <Zap className="w-3 h-3" />
+                      <span className="text-xs">GPS Active</span>
+                      {gps.accuracy && (
+                        <span className="text-xs text-white/60">
+                          ±{Math.round(gps.accuracy)}m
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-red-400">
+                      <ZapOff className="w-3 h-3" />
+                      <span className="text-xs">No GPS</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {gpsError && (
+                <div className="text-yellow-400 text-xs text-center mt-2">
+                  {gpsError}
+                </div>
+              )}
             </div>
           )}
         </div>

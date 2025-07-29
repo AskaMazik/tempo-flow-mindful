@@ -119,7 +119,7 @@ export default function Setup({ onStart }: SetupProps) {
                 </Label>
                 <span className="text-white font-bold text-3xl">
                   {isTimeBased 
-                    ? `${workDuration[0]}m`
+                    ? `${workDuration[0]}min`
                     : `${workDuration[0]}m`
                   }
                 </span>
@@ -129,7 +129,7 @@ export default function Setup({ onStart }: SetupProps) {
                 onValueChange={setWorkDuration}
                 max={isTimeBased ? 10 : 2000}
                 min={isTimeBased ? 0.5 : 100}
-                step={isTimeBased ? 0.5 : 100}
+                step={isTimeBased ? 0.5 : 50}
                 className="w-full"
               />
             </div>
@@ -144,7 +144,7 @@ export default function Setup({ onStart }: SetupProps) {
                 </Label>
                 <span className="text-white font-bold text-3xl">
                   {isTimeBased 
-                    ? `${restDuration[0]}m`
+                    ? `${restDuration[0]}min`
                     : `${restDuration[0]}m`
                   }
                 </span>
@@ -154,7 +154,7 @@ export default function Setup({ onStart }: SetupProps) {
                 onValueChange={setRestDuration}
                 max={isTimeBased ? 5 : 1000}
                 min={isTimeBased ? 0.5 : 50}
-                step={isTimeBased ? 0.5 : 50}
+                step={isTimeBased ? 0.5 : 25}
                 className="w-full"
               />
             </div>
@@ -178,8 +178,11 @@ export default function Setup({ onStart }: SetupProps) {
           {/* Total Session */}
           <div className="text-center space-y-3 pt-6">
             <p className="text-white/70 text-lg">Total Session</p>
+            <p className="text-lg font-light text-white/90 mb-2">
+              {intervalCount[0]} intervals × {workDuration[0]}{isTimeBased ? 'min' : 'm'} fast + {restDuration[0]}{isTimeBased ? 'min' : 'm'} easy
+            </p>
             <p className="text-4xl font-bold text-white">
-              ~{totalTime} minutes
+              {isTimeBased ? `~${totalTime} minutes` : `~${(workDuration[0] + restDuration[0]) * intervalCount[0]}m total`}
             </p>
           </div>
         </div>
