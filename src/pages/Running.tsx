@@ -201,7 +201,7 @@ export default function Running({ config, onReset }: RunningProps) {
                   onClick={handleReset}
                   className="flex-1 py-3 rounded-full text-sm"
                 >
-                  🔄 Reset
+                  Reset
                 </GlassButton>
                 <GlassButton
                   variant="glass"
