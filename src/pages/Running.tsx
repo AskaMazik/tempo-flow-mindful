@@ -26,6 +26,7 @@ export default function Running({ config, onReset }: RunningProps) {
   )
   const [gpsError, setGpsError] = useState<string | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const [audioInitialized, setAudioInitialized] = useState(false)
 
   // GPS tracking hook
   const gps = useGPSTracking({
@@ -94,13 +95,39 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }
 
-  // Simple audio chime function
-  const playChime = (frequency: number = 800) => {
-    if (!config.audioEnabled) return
+  // Initialize audio context on first user interaction
+  const initializeAudio = async () => {
+    if (!config.audioEnabled || audioInitialized) return
     
     try {
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      
+      // Resume audio context if suspended (required on mobile)
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+      }
+      
+      setAudioInitialized(true)
+    } catch (error) {
+      console.log("Audio initialization failed:", error)
+    }
+  }
+
+  // Simple audio chime function
+  const playChime = async (frequency: number = 800) => {
+    if (!config.audioEnabled) return
+    
+    try {
+      // Initialize audio on first use
+      if (!audioInitialized) {
+        await initializeAudio()
+      }
+      
+      if (!audioContextRef.current || audioContextRef.current.state !== 'running') {
+        console.log("Audio context not ready")
+        return
       }
       
       const oscillator = audioContextRef.current.createOscillator()
@@ -119,7 +146,7 @@ export default function Running({ config, onReset }: RunningProps) {
       oscillator.start(audioContextRef.current.currentTime)
       oscillator.stop(audioContextRef.current.currentTime + 0.8)
     } catch (error) {
-      console.log("Audio not available")
+      console.log("Audio playback failed:", error)
     }
   }
 
@@ -167,7 +194,27 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
+    // Initialize audio on first user interaction
+    if (!audioInitialized) {
+      await initializeAudio()
+    }
+    
+    // Request GPS permission if needed for distance-based workouts
+    if (!config.isTimeBased && !isRunning && !gps.isTracking) {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: false, video: false })
+      } catch (e) {
+        // Ignore audio/video error, we just need user gesture
+      }
+      
+      const started = await gps.startTracking()
+      if (!started) {
+        setGpsError("Please allow location access for distance tracking")
+        return
+      }
+    }
+    
     setIsRunning(!isRunning)
   }
 
