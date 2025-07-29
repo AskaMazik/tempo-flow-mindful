@@ -21,23 +21,31 @@ export interface IntervalConfig {
 export default function Setup({ onStart }: SetupProps) {
   const [intervalCount, setIntervalCount] = useState([5])
   const [isTimeBased, setIsTimeBased] = useState(true)
-  const [workDuration, setWorkDuration] = useState([2]) // 2 minutes or 400m
-  const [restDuration, setRestDuration] = useState([1]) // 1 minute or 200m
+  const [workDuration, setWorkDuration] = useState([120]) // 2 minutes in seconds or 400m
+  const [restDuration, setRestDuration] = useState([60]) // 1 minute in seconds or 200m
   const [audioEnabled, setAudioEnabled] = useState(true)
+
+  // Format time display for sliders
+  const formatTimeDisplay = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return secs === 0 ? `${mins}min` : `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleStart = () => {
     const config: IntervalConfig = {
       intervalCount: intervalCount[0],
       isTimeBased,
-      workDuration: workDuration[0],
-      restDuration: restDuration[0],
+      workDuration: isTimeBased ? workDuration[0] / 60 : workDuration[0], // Convert to minutes for time mode
+      restDuration: isTimeBased ? restDuration[0] / 60 : restDuration[0], // Convert to minutes for time mode
       audioEnabled
     }
     onStart(config)
   }
 
   const totalTime = isTimeBased 
-    ? (workDuration[0] + restDuration[0]) * intervalCount[0]
+    ? (workDuration[0] + restDuration[0]) * intervalCount[0] / 60 // Convert back to minutes for display
     : Math.round(((workDuration[0] + restDuration[0]) * intervalCount[0]) / 200) // rough estimate
 
   return (
@@ -65,10 +73,10 @@ export default function Setup({ onStart }: SetupProps) {
           <Card className="p-6 backdrop-blur-md border-0" style={{background: 'var(--glass-bg)', boxShadow: 'var(--glass-shadow)'}}>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label className="text-foreground font-light text-lg">
+                <Label className="text-white font-light text-lg">
                   Intervals
                 </Label>
-                <span className="text-foreground font-bold text-3xl">
+                <span className="text-white font-bold text-3xl">
                   {intervalCount[0]}
                 </span>
               </div>
@@ -119,7 +127,7 @@ export default function Setup({ onStart }: SetupProps) {
                 </Label>
                 <span className="text-white font-bold text-3xl">
                   {isTimeBased 
-                    ? `${workDuration[0]}min`
+                    ? formatTimeDisplay(workDuration[0])
                     : `${workDuration[0]}m`
                   }
                 </span>
@@ -127,9 +135,9 @@ export default function Setup({ onStart }: SetupProps) {
               <Slider
                 value={workDuration}
                 onValueChange={setWorkDuration}
-                max={isTimeBased ? 10 : 2000}
-                min={isTimeBased ? 0.5 : 100}
-                step={isTimeBased ? 0.5 : 50}
+                max={isTimeBased ? 600 : 2000} // 10 minutes in seconds or 2000m
+                min={isTimeBased ? 10 : 100} // 10 seconds or 100m
+                step={isTimeBased ? 5 : 50} // 5 second increments or 50m
                 className="w-full"
               />
             </div>
@@ -144,7 +152,7 @@ export default function Setup({ onStart }: SetupProps) {
                 </Label>
                 <span className="text-white font-bold text-3xl">
                   {isTimeBased 
-                    ? `${restDuration[0]}min`
+                    ? formatTimeDisplay(restDuration[0])
                     : `${restDuration[0]}m`
                   }
                 </span>
@@ -152,9 +160,9 @@ export default function Setup({ onStart }: SetupProps) {
               <Slider
                 value={restDuration}
                 onValueChange={setRestDuration}
-                max={isTimeBased ? 5 : 1000}
-                min={isTimeBased ? 0.5 : 50}
-                step={isTimeBased ? 0.5 : 25}
+                max={isTimeBased ? 300 : 1000} // 5 minutes in seconds or 1000m
+                min={isTimeBased ? 10 : 50} // 10 seconds or 50m
+                step={isTimeBased ? 5 : 25} // 5 second increments or 25m
                 className="w-full"
               />
             </div>
@@ -179,10 +187,10 @@ export default function Setup({ onStart }: SetupProps) {
           <div className="text-center space-y-3 pt-6">
             <p className="text-white/70 text-lg">Total Session</p>
             <p className="text-lg font-light text-white/90 mb-2">
-              {intervalCount[0]} intervals × {workDuration[0]}{isTimeBased ? 'min' : 'm'} fast + {restDuration[0]}{isTimeBased ? 'min' : 'm'} easy
+              {intervalCount[0]} intervals × {isTimeBased ? formatTimeDisplay(workDuration[0]) : `${workDuration[0]}m`} fast + {isTimeBased ? formatTimeDisplay(restDuration[0]) : `${restDuration[0]}m`} easy
             </p>
             <p className="text-4xl font-bold text-white">
-              {isTimeBased ? `~${totalTime} minutes` : `~${(workDuration[0] + restDuration[0]) * intervalCount[0]}m total`}
+              {isTimeBased ? `~${Math.round(totalTime)} minutes` : `~${(workDuration[0] + restDuration[0]) * intervalCount[0]}m total`}
             </p>
           </div>
         </div>
