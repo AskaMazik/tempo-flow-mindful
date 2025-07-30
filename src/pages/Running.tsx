@@ -134,6 +134,7 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Phase transition handler
   const handlePhaseTransition = useCallback(() => {
+    console.log('Phase transition triggered', { currentPhase, currentInterval, totalIntervals: config.intervalCount })
     console.log('=== PHASE TRANSITION START ===')
     console.log('Current state - Phase:', currentPhase, 'Interval:', currentInterval, 'TimeRemaining:', timeRemaining)
     
@@ -144,6 +145,7 @@ export default function Running({ config, onReset }: RunningProps) {
       setCurrentPhase("recover")
       const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
       console.log('Setting recovery time to:', newTarget)
+      console.log('Setting new timeRemaining', { newValue: newTarget, phase: 'recover' })
       setTimeRemaining(newTarget)
       setDistanceRemaining(newTarget)
       if (!config.isTimeBased) {
@@ -157,8 +159,9 @@ export default function Running({ config, onReset }: RunningProps) {
         setCurrentInterval(prev => prev + 1)
         setCurrentPhase("work")
         const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
-        console.log('Setting work time to:', newTarget)
-        setTimeRemaining(newTarget)
+      console.log('Setting work time to:', newTarget)
+      console.log('Setting new timeRemaining', { newValue: newTarget, phase: 'work' })
+      setTimeRemaining(newTarget)
         setDistanceRemaining(newTarget)
         if (!config.isTimeBased) {
           gps.resetIntervalDistance()
@@ -184,6 +187,7 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Timer effect for time-based intervals
   useEffect(() => {
+    console.log('Timer useEffect triggered', { isRunning, timeRemaining, currentPhase, currentInterval })
     let interval: NodeJS.Timeout
 
     if (isRunning && config.isTimeBased && currentPhase !== "complete" && timeRemaining > 0) {
@@ -192,7 +196,7 @@ export default function Running({ config, onReset }: RunningProps) {
       
       interval = setInterval(() => {
         setTimeRemaining(prev => {
-          console.log('Timer tick - prev:', prev, 'Phase:', currentPhase)
+          console.log('Timer tick', { timeRemaining: prev, newValue: prev - 1 })
           
           if (prev <= 1) {
             console.log('=== TIMER REACHED 1 - TRIGGERING TRANSITION ===')
