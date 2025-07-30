@@ -101,7 +101,7 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Initialize audio context on first user interaction
   const initializeAudio = async () => {
-    if (!config.audioEnabled || audioInitialized) return
+    if (!config.audioEnabled) return false
     
     try {
       if (!audioContextRef.current) {
@@ -113,9 +113,16 @@ export default function Running({ config, onReset }: RunningProps) {
         await audioContextRef.current.resume()
       }
       
-      setAudioInitialized(true)
+      // Test audio context is working
+      if (audioContextRef.current.state === 'running') {
+        setAudioInitialized(true)
+        return true
+      }
+      
+      return false
     } catch (error) {
       console.log("Audio initialization failed:", error)
+      return false
     }
   }
 
@@ -124,13 +131,22 @@ export default function Running({ config, onReset }: RunningProps) {
     if (!config.audioEnabled) return
     
     try {
-      // Initialize audio on first use
-      if (!audioInitialized) {
-        await initializeAudio()
+      // Ensure audio is initialized before playing
+      if (!audioInitialized || !audioContextRef.current) {
+        const success = await initializeAudio()
+        if (!success) {
+          console.log("Audio context initialization failed")
+          return
+        }
+      }
+      
+      // Resume context if suspended (common on mobile)
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
       }
       
       if (!audioContextRef.current || audioContextRef.current.state !== 'running') {
-        console.log("Audio context not ready")
+        console.log("Audio context not ready, state:", audioContextRef.current?.state)
         return
       }
       
