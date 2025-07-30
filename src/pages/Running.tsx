@@ -186,16 +186,22 @@ export default function Running({ config, onReset }: RunningProps) {
   useEffect(() => {
     let interval: NodeJS.Timeout
 
-    if (isRunning && config.isTimeBased && currentPhase !== "complete") {
-      console.log('Starting timer for phase:', currentPhase, 'with initial time:', timeRemaining)
+    if (isRunning && config.isTimeBased && currentPhase !== "complete" && timeRemaining > 0) {
+      console.log('=== STARTING NEW TIMER ===')
+      console.log('Phase:', currentPhase, 'TimeRemaining:', timeRemaining)
+      
       interval = setInterval(() => {
         setTimeRemaining(prev => {
-          console.log('Timer tick:', prev, 'Phase:', currentPhase)
+          console.log('Timer tick - prev:', prev, 'Phase:', currentPhase)
+          
           if (prev <= 1) {
-            console.log('Timer reached 1, calling handlePhaseTransition')
+            console.log('=== TIMER REACHED 1 - TRIGGERING TRANSITION ===')
+            // Clear this interval immediately to prevent multiple calls
+            clearInterval(interval)
             handlePhaseTransition()
-            return prev // Keep the current value, handlePhaseTransition will set new value
+            return 0 // Set to 0 to prevent further ticks
           }
+          
           return prev - 1
         })
       }, 1000)
@@ -203,11 +209,11 @@ export default function Running({ config, onReset }: RunningProps) {
 
     return () => {
       if (interval) {
-        console.log('Clearing timer interval for phase:', currentPhase)
+        console.log('=== CLEANING UP TIMER ===', 'Phase:', currentPhase)
         clearInterval(interval)
       }
     }
-  }, [isRunning, currentPhase, config.isTimeBased, handlePhaseTransition])
+  }, [isRunning, currentPhase, config.isTimeBased, timeRemaining])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
