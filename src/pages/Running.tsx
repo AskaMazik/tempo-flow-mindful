@@ -28,6 +28,20 @@ export default function Running({ config, onReset }: RunningProps) {
   const audioContextRef = useRef<AudioContext | null>(null)
   const [audioInitialized, setAudioInitialized] = useState(false)
 
+  // Use refs to avoid stale closures in timer
+  const currentPhaseRef = useRef(currentPhase)
+  const currentIntervalRef = useRef(currentInterval)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentPhaseRef.current = currentPhase
+  }, [currentPhase])
+
+  useEffect(() => {
+    currentIntervalRef.current = currentInterval
+  }, [currentInterval])
+
   // GPS tracking hook
   const gps = useGPSTracking({
     onDistanceUpdate: (totalDistance, intervalDistance) => {
@@ -39,13 +53,11 @@ export default function Running({ config, onReset }: RunningProps) {
     },
     onError: (error) => {
       setGpsError(error)
-      // Fallback to time mode if GPS fails
       if (!config.isTimeBased) {
         console.log('GPS failed, continuing with time estimation')
       }
     }
   })
-
 
   // Start GPS tracking when distance-based mode starts
   useEffect(() => {
@@ -70,12 +82,10 @@ export default function Running({ config, onReset }: RunningProps) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       }
       
-      // Resume audio context if suspended (required on mobile)
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume()
       }
       
-      // Test audio context is working
       if (audioContextRef.current.state === 'running') {
         setAudioInitialized(true)
         return true
@@ -93,7 +103,6 @@ export default function Running({ config, onReset }: RunningProps) {
     if (!config.audioEnabled) return
     
     try {
-      // Ensure audio is initialized before playing
       if (!audioInitialized || !audioContextRef.current) {
         const success = await initializeAudio()
         if (!success) {
@@ -102,7 +111,6 @@ export default function Running({ config, onReset }: RunningProps) {
         }
       }
       
-      // Resume context if suspended (common on mobile)
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume()
       }
@@ -132,43 +140,38 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }, [config.audioEnabled, audioInitialized])
 
-  // Phase transition handler
+  // Phase transition handler - FIXED: removed timeRemaining dependency
   const handlePhaseTransition = useCallback(() => {
-    console.log('Phase transition triggered', { currentPhase, currentInterval, totalIntervals: config.intervalCount })
     console.log('=== PHASE TRANSITION START ===')
-    console.log('Current state - Phase:', currentPhase, 'Interval:', currentInterval, 'TimeRemaining:', timeRemaining)
+    console.log('Current phase:', currentPhaseRef.current)
+    console.log('Current interval:', currentIntervalRef.current)
     
-    if (currentPhase === "work") {
-      // Switch to recovery
+    if (currentPhaseRef.current === "work") {
       console.log('Transitioning: work -> recovery')
       playChime(600)
       setCurrentPhase("recover")
       const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
       console.log('Setting recovery time to:', newTarget)
-      console.log('Setting new timeRemaining', { newValue: newTarget, phase: 'recover' })
       setTimeRemaining(newTarget)
       setDistanceRemaining(newTarget)
       if (!config.isTimeBased) {
         gps.resetIntervalDistance()
       }
-    } else if (currentPhase === "recover") {
-      if (currentInterval < config.intervalCount) {
-        // Switch to next work interval
-        console.log('Transitioning: recovery -> work, interval:', currentInterval + 1)
+    } else if (currentPhaseRef.current === "recover") {
+      if (currentIntervalRef.current < config.intervalCount) {
+        console.log('Transitioning: recovery -> work, interval:', currentIntervalRef.current + 1)
         playChime(800)
         setCurrentInterval(prev => prev + 1)
         setCurrentPhase("work")
         const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
-      console.log('Setting work time to:', newTarget)
-      console.log('Setting new timeRemaining', { newValue: newTarget, phase: 'work' })
-      setTimeRemaining(newTarget)
+        console.log('Setting work time to:', newTarget)
+        setTimeRemaining(newTarget)
         setDistanceRemaining(newTarget)
         if (!config.isTimeBased) {
           gps.resetIntervalDistance()
         }
       } else {
-        // Session complete
-        console.log('Transitioning: recovery -> complete')
+        console.log('Session complete!')
         playChime(1000)
         setCurrentPhase("complete")
         setIsRunning(false)
@@ -176,7 +179,7 @@ export default function Running({ config, onReset }: RunningProps) {
       }
     }
     console.log('=== PHASE TRANSITION END ===')
-  }, [currentPhase, currentInterval, config, playChime, gps, timeRemaining])
+  }, [config, playChime, gps]) // REMOVED timeRemaining dependency
 
   // Handle distance-based phase transitions
   useEffect(() => {
@@ -185,25 +188,33 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }, [config.isTimeBased, isRunning, distanceRemaining, handlePhaseTransition])
 
-  // Timer effect for time-based intervals
+  // FIXED TIMER LOGIC: Simplified timer effect
   useEffect(() => {
-    console.log('Timer useEffect triggered', { isRunning, timeRemaining, currentPhase, currentInterval })
-    let interval: NodeJS.Timeout
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
 
     if (isRunning && config.isTimeBased && currentPhase !== "complete") {
-      console.log('=== STARTING NEW TIMER ===')
-      console.log('Phase:', currentPhase, 'TimeRemaining:', timeRemaining)
+      console.log('Starting timer for phase:', currentPhase, 'with time:', timeRemaining)
       
-      interval = setInterval(() => {
+      timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
-          console.log('Timer tick', { timeRemaining: prev, newValue: prev - 1 })
+          console.log('Timer tick - remaining:', prev)
           
           if (prev <= 1) {
-            console.log('=== TIMER REACHED 1 - TRIGGERING TRANSITION ===')
-            // Clear this interval immediately to prevent multiple calls
-            clearInterval(interval)
-            handlePhaseTransition()
-            return 1 // Keep at 1, don't go to 0 - phase transition will handle the reset
+            console.log('Timer reached 0 - triggering phase transition')
+            // Clear timer before transition to prevent multiple calls
+            if (timerRef.current) {
+              clearInterval(timerRef.current)
+              timerRef.current = null
+            }
+            // Use setTimeout to avoid state update conflicts
+            setTimeout(() => {
+              handlePhaseTransition()
+            }, 0)
+            return 0
           }
           
           return prev - 1
@@ -212,12 +223,21 @@ export default function Running({ config, onReset }: RunningProps) {
     }
 
     return () => {
-      if (interval) {
-        console.log('=== CLEANING UP TIMER ===', 'Phase:', currentPhase)
-        clearInterval(interval)
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
       }
     }
-  }, [isRunning, currentPhase, config.isTimeBased, handlePhaseTransition])
+  }, [isRunning, currentPhase, config.isTimeBased]) // REMOVED handlePhaseTransition dependency
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -245,9 +265,7 @@ export default function Running({ config, onReset }: RunningProps) {
   }
 
   const handlePlayPause = async () => {
-    // Initialize audio on first user interaction for mobile compatibility
     await initializeAudio()
-    
     setIsRunning(!isRunning)
   }
 
@@ -267,7 +285,7 @@ export default function Running({ config, onReset }: RunningProps) {
     onReset()
   }
 
-    return (
+  return (
     <div 
       className="min-h-screen flex flex-col relative overflow-hidden"
       style={{background: 'linear-gradient(135deg, #9b59b6 0%, #5dade2 100%)'}}
@@ -282,9 +300,7 @@ export default function Running({ config, onReset }: RunningProps) {
       />
 
       <div className="running-container">
-        {/* Compact centered layout */}
         <div className="flex flex-col items-center justify-center text-center">
-          {/* Interval Progress */}
           <div className="mb-4">
             <p className="text-white/70 text-lg font-light mb-2">Interval</p>
             <h1 className="interval-count text-white">
@@ -292,19 +308,16 @@ export default function Running({ config, onReset }: RunningProps) {
             </h1>
           </div>
 
-          {/* Phase Indicator */}
           <div className="phase-display text-white/80 uppercase">
             {currentPhase === "work" ? "FAST PACE" : currentPhase === "recover" ? "EASY PACE" : "COMPLETE"}
           </div>
           
-          {/* Countdown Timer */}
           <div className="countdown-time text-white">
             {config.isTimeBased ? formatTime(timeRemaining) : formatDistance(distanceRemaining)}
           </div>
           
           <p className="text-white/60 text-base font-light mb-6">remaining</p>
 
-          {/* Progress Bar */}
           {currentPhase !== "complete" && (
             <div className="w-full max-w-sm mb-6">
               <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden mb-4">
@@ -314,14 +327,12 @@ export default function Running({ config, onReset }: RunningProps) {
                 />
               </div>
               
-              {/* Next Phase Indicator */}
               <div className="inline-block px-6 py-2 bg-white/15 rounded-full border border-white/25 backdrop-blur-md">
                 <span className="text-white/90 text-sm font-light">
                   Next: {currentPhase === "work" ? "Easy Pace" : "Fast Pace"}
                 </span>
               </div>
 
-              {/* GPS Status for distance mode */}
               {!config.isTimeBased && (
                 <div className="flex items-center justify-center gap-2 mt-2">
                   {gps.isTracking ? (
@@ -352,11 +363,9 @@ export default function Running({ config, onReset }: RunningProps) {
           )}
         </div>
 
-        {/* Controls - Bottom Section */}
         <div className="w-full max-w-sm space-y-3 mt-8">
           {currentPhase !== "complete" ? (
             <>
-              {/* Main Resume/Start Button */}
               <GlassButton
                 variant="primary"
                 size="xl"
@@ -366,7 +375,6 @@ export default function Running({ config, onReset }: RunningProps) {
                 ▶ {isRunning ? "Pause" : "Resume"}
               </GlassButton>
 
-              {/* Secondary Controls */}
               <div className="flex gap-3">
                 <GlassButton
                   variant="glass"
@@ -387,7 +395,6 @@ export default function Running({ config, onReset }: RunningProps) {
               </div>
             </>
           ) : (
-            /* Session Complete */
             <div className="space-y-4 text-center">
               <div className="py-6">
                 <h2 className="text-3xl font-light text-white mb-3">
