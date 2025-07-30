@@ -134,11 +134,14 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Phase transition handler
   const handlePhaseTransition = useCallback(() => {
+    console.log('Phase transition called:', currentPhase, 'Interval:', currentInterval)
     if (currentPhase === "work") {
       // Switch to recovery
+      console.log('Switching to recovery phase')
       playChime(600)
       setCurrentPhase("recover")
       const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
+      console.log('Setting recovery time to:', newTarget)
       setTimeRemaining(newTarget)
       setDistanceRemaining(newTarget)
       if (!config.isTimeBased) {
@@ -147,10 +150,12 @@ export default function Running({ config, onReset }: RunningProps) {
     } else if (currentPhase === "recover") {
       if (currentInterval < config.intervalCount) {
         // Switch to next work interval
+        console.log('Switching to next work interval:', currentInterval + 1)
         playChime(800)
         setCurrentInterval(prev => prev + 1)
         setCurrentPhase("work")
         const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
+        console.log('Setting work time to:', newTarget)
         setTimeRemaining(newTarget)
         setDistanceRemaining(newTarget)
         if (!config.isTimeBased) {
@@ -158,6 +163,7 @@ export default function Running({ config, onReset }: RunningProps) {
         }
       } else {
         // Session complete
+        console.log('Session complete')
         playChime(1000)
         setCurrentPhase("complete")
         setIsRunning(false)
@@ -180,7 +186,9 @@ export default function Running({ config, onReset }: RunningProps) {
     if (isRunning && config.isTimeBased) {
       interval = setInterval(() => {
         setTimeRemaining(prev => {
+          console.log('Timer tick:', prev, 'Phase:', currentPhase)
           if (prev <= 1) {
+            console.log('Timer reached 1, calling handlePhaseTransition')
             handlePhaseTransition()
             return 0
           }
