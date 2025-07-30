@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { GlassButton } from "@/components/ui/glass-button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -35,11 +35,6 @@ export default function Running({ config, onReset }: RunningProps) {
         const targetDistance = currentPhase === "work" ? config.workDuration : config.restDuration
         const remaining = Math.max(0, targetDistance - intervalDistance)
         setDistanceRemaining(remaining)
-        
-        // Check if interval distance reached
-        if (remaining <= 0) {
-          handlePhaseTransition()
-        }
       }
     },
     onError: (error) => {
@@ -50,6 +45,7 @@ export default function Running({ config, onReset }: RunningProps) {
       }
     }
   })
+
 
   // Start GPS tracking when distance-based mode starts
   useEffect(() => {
@@ -64,40 +60,6 @@ export default function Running({ config, onReset }: RunningProps) {
     }
     return () => gps.stopTracking()
   }, [config.isTimeBased, isRunning, gps])
-
-  // Phase transition handler
-  const handlePhaseTransition = () => {
-    if (currentPhase === "work") {
-      // Switch to recovery
-      playChime(600)
-      setCurrentPhase("recover")
-      const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
-      setTimeRemaining(newTarget)
-      setDistanceRemaining(newTarget)
-      if (!config.isTimeBased) {
-        gps.resetIntervalDistance()
-      }
-    } else if (currentPhase === "recover") {
-      if (currentInterval < config.intervalCount) {
-        // Switch to next work interval
-        playChime(800)
-        setCurrentInterval(prev => prev + 1)
-        setCurrentPhase("work")
-        const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
-        setTimeRemaining(newTarget)
-        setDistanceRemaining(newTarget)
-        if (!config.isTimeBased) {
-          gps.resetIntervalDistance()
-        }
-      } else {
-        // Session complete
-        playChime(1000)
-        setCurrentPhase("complete")
-        setIsRunning(false)
-        gps.stopTracking()
-      }
-    }
-  }
 
   // Initialize audio context on first user interaction
   const initializeAudio = async () => {
@@ -127,7 +89,7 @@ export default function Running({ config, onReset }: RunningProps) {
   }
 
   // Simple audio chime function
-  const playChime = async (frequency: number = 800) => {
+  const playChime = useCallback(async (frequency: number = 800) => {
     if (!config.audioEnabled) return
     
     try {
@@ -168,7 +130,48 @@ export default function Running({ config, onReset }: RunningProps) {
     } catch (error) {
       console.log("Audio playback failed:", error)
     }
-  }
+  }, [config.audioEnabled, audioInitialized])
+
+  // Phase transition handler
+  const handlePhaseTransition = useCallback(() => {
+    if (currentPhase === "work") {
+      // Switch to recovery
+      playChime(600)
+      setCurrentPhase("recover")
+      const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
+      setTimeRemaining(newTarget)
+      setDistanceRemaining(newTarget)
+      if (!config.isTimeBased) {
+        gps.resetIntervalDistance()
+      }
+    } else if (currentPhase === "recover") {
+      if (currentInterval < config.intervalCount) {
+        // Switch to next work interval
+        playChime(800)
+        setCurrentInterval(prev => prev + 1)
+        setCurrentPhase("work")
+        const newTarget = config.isTimeBased ? config.workDuration * 60 : config.workDuration
+        setTimeRemaining(newTarget)
+        setDistanceRemaining(newTarget)
+        if (!config.isTimeBased) {
+          gps.resetIntervalDistance()
+        }
+      } else {
+        // Session complete
+        playChime(1000)
+        setCurrentPhase("complete")
+        setIsRunning(false)
+        gps.stopTracking()
+      }
+    }
+  }, [currentPhase, currentInterval, config, playChime, gps])
+
+  // Handle distance-based phase transitions
+  useEffect(() => {
+    if (!config.isTimeBased && isRunning && distanceRemaining <= 0) {
+      handlePhaseTransition()
+    }
+  }, [config.isTimeBased, isRunning, distanceRemaining, handlePhaseTransition])
 
   // Timer effect for time-based intervals
   useEffect(() => {
@@ -187,7 +190,7 @@ export default function Running({ config, onReset }: RunningProps) {
     }
 
     return () => clearInterval(interval)
-  }, [isRunning, timeRemaining, currentPhase, currentInterval, config.isTimeBased])
+  }, [isRunning, timeRemaining, currentPhase, currentInterval, config.isTimeBased, handlePhaseTransition])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
