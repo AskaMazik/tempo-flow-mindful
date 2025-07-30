@@ -134,10 +134,12 @@ export default function Running({ config, onReset }: RunningProps) {
 
   // Phase transition handler
   const handlePhaseTransition = useCallback(() => {
-    console.log('Phase transition called:', currentPhase, 'Interval:', currentInterval)
+    console.log('=== PHASE TRANSITION START ===')
+    console.log('Current state - Phase:', currentPhase, 'Interval:', currentInterval, 'TimeRemaining:', timeRemaining)
+    
     if (currentPhase === "work") {
       // Switch to recovery
-      console.log('Switching to recovery phase')
+      console.log('Transitioning: work -> recovery')
       playChime(600)
       setCurrentPhase("recover")
       const newTarget = config.isTimeBased ? config.restDuration * 60 : config.restDuration
@@ -150,7 +152,7 @@ export default function Running({ config, onReset }: RunningProps) {
     } else if (currentPhase === "recover") {
       if (currentInterval < config.intervalCount) {
         // Switch to next work interval
-        console.log('Switching to next work interval:', currentInterval + 1)
+        console.log('Transitioning: recovery -> work, interval:', currentInterval + 1)
         playChime(800)
         setCurrentInterval(prev => prev + 1)
         setCurrentPhase("work")
@@ -163,14 +165,15 @@ export default function Running({ config, onReset }: RunningProps) {
         }
       } else {
         // Session complete
-        console.log('Session complete')
+        console.log('Transitioning: recovery -> complete')
         playChime(1000)
         setCurrentPhase("complete")
         setIsRunning(false)
         gps.stopTracking()
       }
     }
-  }, [currentPhase, currentInterval, config, playChime, gps])
+    console.log('=== PHASE TRANSITION END ===')
+  }, [currentPhase, currentInterval, config, playChime, gps, timeRemaining])
 
   // Handle distance-based phase transitions
   useEffect(() => {
