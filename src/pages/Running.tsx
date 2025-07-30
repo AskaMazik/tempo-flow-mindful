@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { GlassButton } from "@/components/ui/glass-button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Play, Pause, Square, RotateCcw, Zap, ZapOff } from "lucide-react"
+import { Play, Pause, Square, RotateCcw, Zap, ZapOff, Volume2, VolumeX } from "lucide-react"
 import { IntervalConfig } from "./Setup"
 import { useGPSTracking } from "@/hooks/useGPSTracking"
 
@@ -25,6 +25,8 @@ export default function Running({ config, onReset }: RunningProps) {
     config.isTimeBased ? 0 : config.workDuration
   )
   const [gpsError, setGpsError] = useState<string | null>(null)
+  const [gpsPermission, setGpsPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt')
+  const [audioPermission, setAudioPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt')
   const audioContextRef = useRef<AudioContext | null>(null)
   const [audioInitialized, setAudioInitialized] = useState(false)
 
@@ -53,73 +55,158 @@ export default function Running({ config, onReset }: RunningProps) {
     },
     onError: (error) => {
       setGpsError(error)
-      if (!config.isTimeBased) {
-        console.log('GPS failed, continuing with time estimation')
-      }
+      setGpsPermission('denied')
     }
   })
 
-  // Start GPS tracking when distance-based mode starts
-  useEffect(() => {
-    if (!config.isTimeBased && isRunning && !gps.isTracking) {
-      gps.startTracking().then(success => {
-        if (!success) {
-          setGpsError("Location access required for distance tracking")
-        }
-      })
-    } else if (config.isTimeBased || !isRunning) {
-      gps.stopTracking()
+  // EXPLICIT GPS PERMISSION REQUEST
+  const requestGPSPermission = useCallback(async (): Promise<boolean> => {
+    if (!navigator.geolocation) {
+      setGpsError("GPS not supported")
+      setGpsPermission('denied')
+      return false
     }
-    return () => gps.stopTracking()
-  }, [config.isTimeBased, isRunning, gps])
 
-  // Initialize audio context on first user interaction
-  const initializeAudio = async () => {
-    if (!config.audioEnabled) return false
-    
     try {
+      // First check existing permission status
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'geolocation' })
+        if (permission.state === 'granted') {
+          setGpsPermission('granted')
+          setGpsError(null)
+          return true
+        } else if (permission.state === 'denied') {
+          setGpsPermission('denied')
+          setGpsError("Location access denied. Enable in browser settings.")
+          return false
+        }
+      }
+
+      // Request permission by calling getCurrentPosition
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log('GPS permission granted:', position)
+            setGpsPermission('granted')
+            setGpsError(null)
+            resolve(true)
+          },
+          (error) => {
+            console.log('GPS permission denied:', error)
+            setGpsPermission('denied')
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                setGpsError("Location access denied. Check browser settings.")
+                break
+              case error.POSITION_UNAVAILABLE:
+                setGpsError("Location unavailable. Try moving outdoors.")
+                break
+              case error.TIMEOUT:
+                setGpsError("Location request timed out. Try again.")
+                break
+              default:
+                setGpsError("Location error. Please try again.")
+                break
+            }
+            resolve(false)
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        )
+      })
+    } catch (error) {
+      console.log('GPS permission error:', error)
+      setGpsPermission('denied')
+      setGpsError("Could not request location permission")
+      return false
+    }
+  }, [])
+
+  // EXPLICIT AUDIO PERMISSION REQUEST
+  const requestAudioPermission = useCallback(async (): Promise<boolean> => {
+    if (!config.audioEnabled) return true
+
+    try {
+      // Create or resume audio context
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       }
-      
+
+      // For mobile browsers, audio context starts suspended
+      if (audioContextRef.current.state === 'suspended') {
+        console.log('Resuming suspended audio context...')
+        await audioContextRef.current.resume()
+      }
+
+      if (audioContextRef.current.state === 'running') {
+        console.log('Audio permission granted')
+        setAudioPermission('granted')
+        setAudioInitialized(true)
+        
+        // Test audio with a quick beep
+        const oscillator = audioContextRef.current.createOscillator()
+        const gainNode = audioContextRef.current.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContextRef.current.destination)
+        
+        oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime)
+        oscillator.type = 'sine'
+        
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime)
+        gainNode.gain.linearRampToValueAtTime(0.05, audioContextRef.current.currentTime + 0.1)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.3)
+        
+        oscillator.start(audioContextRef.current.currentTime)
+        oscillator.stop(audioContextRef.current.currentTime + 0.3)
+        
+        return true
+      } else {
+        console.log('Audio context not running, state:', audioContextRef.current.state)
+        setAudioPermission('denied')
+        return false
+      }
+    } catch (error) {
+      console.log('Audio permission error:', error)
+      setAudioPermission('denied')
+      return false
+    }
+  }, [config.audioEnabled])
+
+  // VIBRATION FALLBACK for mobile
+  const triggerVibration = useCallback((pattern: number[] = [100]) => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern)
+    }
+  }, [])
+
+  // Enhanced audio chime with fallback
+  const playChime = useCallback(async (frequency: number = 800) => {
+    if (!config.audioEnabled) return
+
+    try {
+      if (audioPermission !== 'granted' || !audioInitialized || !audioContextRef.current) {
+        console.log('Audio not ready, using vibration fallback')
+        // Fallback to vibration
+        if (frequency === 600) triggerVibration([100]) // Recovery
+        else if (frequency === 800) triggerVibration([100, 50, 100]) // Work
+        else triggerVibration([200, 100, 200, 100, 200]) // Complete
+        return
+      }
+
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume()
       }
-      
-      if (audioContextRef.current.state === 'running') {
-        setAudioInitialized(true)
-        return true
-      }
-      
-      return false
-    } catch (error) {
-      console.log("Audio initialization failed:", error)
-      return false
-    }
-  }
 
-  // Simple audio chime function
-  const playChime = useCallback(async (frequency: number = 800) => {
-    if (!config.audioEnabled) return
-    
-    try {
-      if (!audioInitialized || !audioContextRef.current) {
-        const success = await initializeAudio()
-        if (!success) {
-          console.log("Audio context initialization failed")
-          return
-        }
-      }
-      
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume()
-      }
-      
-      if (!audioContextRef.current || audioContextRef.current.state !== 'running') {
-        console.log("Audio context not ready, state:", audioContextRef.current?.state)
+      if (audioContextRef.current.state !== 'running') {
+        console.log('Audio context not running, using vibration')
+        triggerVibration([100])
         return
       }
-      
+
       const oscillator = audioContextRef.current.createOscillator()
       const gainNode = audioContextRef.current.createGain()
       
@@ -131,16 +218,19 @@ export default function Running({ config, onReset }: RunningProps) {
       
       gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime)
       gainNode.gain.linearRampToValueAtTime(0.1, audioContextRef.current.currentTime + 0.1)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.8)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.5)
       
       oscillator.start(audioContextRef.current.currentTime)
-      oscillator.stop(audioContextRef.current.currentTime + 0.8)
+      oscillator.stop(audioContextRef.current.currentTime + 0.5)
+      
+      console.log('Audio chime played successfully')
     } catch (error) {
-      console.log("Audio playback failed:", error)
+      console.log('Audio playback failed, using vibration:', error)
+      triggerVibration([100])
     }
-  }, [config.audioEnabled, audioInitialized])
+  }, [config.audioEnabled, audioPermission, audioInitialized, triggerVibration])
 
-  // Phase transition handler - FIXED: removed timeRemaining dependency
+  // Phase transition handler
   const handlePhaseTransition = useCallback(() => {
     console.log('=== PHASE TRANSITION START ===')
     console.log('Current phase:', currentPhaseRef.current)
@@ -179,7 +269,7 @@ export default function Running({ config, onReset }: RunningProps) {
       }
     }
     console.log('=== PHASE TRANSITION END ===')
-  }, [config, playChime, gps]) // REMOVED timeRemaining dependency
+  }, [config, playChime, gps])
 
   // Handle distance-based phase transitions
   useEffect(() => {
@@ -188,9 +278,8 @@ export default function Running({ config, onReset }: RunningProps) {
     }
   }, [config.isTimeBased, isRunning, distanceRemaining, handlePhaseTransition])
 
-  // FIXED TIMER LOGIC: Simplified timer effect
+  // Timer effect
   useEffect(() => {
-    // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
@@ -205,12 +294,10 @@ export default function Running({ config, onReset }: RunningProps) {
           
           if (prev <= 1) {
             console.log('Timer reached 0 - triggering phase transition')
-            // Clear timer before transition to prevent multiple calls
             if (timerRef.current) {
               clearInterval(timerRef.current)
               timerRef.current = null
             }
-            // Use setTimeout to avoid state update conflicts
             setTimeout(() => {
               handlePhaseTransition()
             }, 0)
@@ -228,7 +315,7 @@ export default function Running({ config, onReset }: RunningProps) {
         timerRef.current = null
       }
     }
-  }, [isRunning, currentPhase, config.isTimeBased]) // REMOVED handlePhaseTransition dependency
+  }, [isRunning, currentPhase, config.isTimeBased])
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -238,6 +325,23 @@ export default function Running({ config, onReset }: RunningProps) {
       }
     }
   }, [])
+
+  // Auto-request GPS permission when needed
+  useEffect(() => {
+    if (!config.isTimeBased && gpsPermission === 'prompt') {
+      requestGPSPermission()
+    }
+  }, [config.isTimeBased, gpsPermission, requestGPSPermission])
+
+  // Start GPS tracking when permission granted
+  useEffect(() => {
+    if (!config.isTimeBased && isRunning && gpsPermission === 'granted') {
+      gps.startTracking()
+    } else {
+      gps.stopTracking()
+    }
+    return () => gps.stopTracking()
+  }, [config.isTimeBased, isRunning, gpsPermission, gps])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -265,7 +369,19 @@ export default function Running({ config, onReset }: RunningProps) {
   }
 
   const handlePlayPause = async () => {
-    await initializeAudio()
+    // Request permissions on first interaction
+    if (config.audioEnabled && audioPermission === 'prompt') {
+      await requestAudioPermission()
+    }
+    
+    if (!config.isTimeBased && gpsPermission === 'prompt') {
+      const granted = await requestGPSPermission()
+      if (!granted) {
+        // Don't start if GPS is required but denied
+        return
+      }
+    }
+    
     setIsRunning(!isRunning)
   }
 
@@ -290,7 +406,6 @@ export default function Running({ config, onReset }: RunningProps) {
       className="min-h-screen flex flex-col relative overflow-hidden"
       style={{background: 'linear-gradient(135deg, #9b59b6 0%, #5dade2 100%)'}}
     >
-      {/* Glass morphism background */}
       <div className="absolute inset-0 bg-gradient-glass opacity-30" />
       <div 
         className="absolute top-1/4 left-1/3 w-64 h-64 rounded-full blur-3xl opacity-20 animate-pulse transition-all duration-1000"
@@ -333,30 +448,70 @@ export default function Running({ config, onReset }: RunningProps) {
                 </span>
               </div>
 
-              {!config.isTimeBased && (
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  {gps.isTracking ? (
-                    <div className="flex items-center gap-1 text-green-400">
-                      <Zap className="w-3 h-3" />
-                      <span className="text-xs">GPS Active</span>
-                      {gps.accuracy && (
-                        <span className="text-xs text-white/60">
-                          ±{Math.round(gps.accuracy)}m
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-400">
-                      <ZapOff className="w-3 h-3" />
-                      <span className="text-xs">No GPS</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Permission Status Display */}
+              <div className="flex items-center justify-center gap-4 mt-3">
+                {/* Audio Status */}
+                {config.audioEnabled && (
+                  <div className="flex items-center gap-1">
+                    {audioPermission === 'granted' ? (
+                      <Volume2 className="w-3 h-3 text-green-400" />
+                    ) : (
+                      <VolumeX className="w-3 h-3 text-red-400" />
+                    )}
+                    <span className="text-xs text-white/60">
+                      {audioPermission === 'granted' ? 'Audio' : 'No Audio'}
+                    </span>
+                  </div>
+                )}
+
+                {/* GPS Status */}
+                {!config.isTimeBased && (
+                  <div className="flex items-center gap-1">
+                    {gpsPermission === 'granted' && gps.isTracking ? (
+                      <div className="flex items-center gap-1 text-green-400">
+                        <Zap className="w-3 h-3" />
+                        <span className="text-xs">GPS Active</span>
+                        {gps.accuracy && (
+                          <span className="text-xs text-white/60">
+                            ±{Math.round(gps.accuracy)}m
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-red-400">
+                        <ZapOff className="w-3 h-3" />
+                        <span className="text-xs">No GPS</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {gpsError && (
                 <div className="text-yellow-400 text-xs text-center mt-2">
                   {gpsError}
+                </div>
+              )}
+
+              {/* Permission Request Buttons */}
+              {(audioPermission === 'denied' || gpsPermission === 'denied') && (
+                <div className="flex gap-2 mt-3">
+                  {config.audioEnabled && audioPermission === 'denied' && (
+                    <button
+                      onClick={requestAudioPermission}
+                      className="flex-1 px-3 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-xs text-yellow-300"
+                    >
+                      Enable Audio
+                    </button>
+                  )}
+                  {!config.isTimeBased && gpsPermission === 'denied' && (
+                    <button
+                      onClick={requestGPSPermission}
+                      className="flex-1 px-3 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-xs text-yellow-300"
+                    >
+                      Enable GPS
+                    </button>
+                  )}
                 </div>
               )}
             </div>
