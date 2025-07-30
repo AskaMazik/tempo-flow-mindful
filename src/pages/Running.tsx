@@ -190,7 +190,7 @@ export default function Running({ config, onReset }: RunningProps) {
     console.log('Timer useEffect triggered', { isRunning, timeRemaining, currentPhase, currentInterval })
     let interval: NodeJS.Timeout
 
-    if (isRunning && config.isTimeBased && currentPhase !== "complete" && timeRemaining > 0) {
+    if (isRunning && config.isTimeBased && currentPhase !== "complete") {
       console.log('=== STARTING NEW TIMER ===')
       console.log('Phase:', currentPhase, 'TimeRemaining:', timeRemaining)
       
