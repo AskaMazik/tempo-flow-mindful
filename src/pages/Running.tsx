@@ -213,7 +213,7 @@ export default function Running({ config, onReset }: RunningProps) {
         clearInterval(interval)
       }
     }
-  }, [isRunning, currentPhase, config.isTimeBased, timeRemaining])
+  }, [isRunning, currentPhase, config.isTimeBased, handlePhaseTransition])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
