@@ -203,7 +203,7 @@ export default function Running({ config, onReset }: RunningProps) {
             // Clear this interval immediately to prevent multiple calls
             clearInterval(interval)
             handlePhaseTransition()
-            return 0 // Set to 0 to prevent further ticks
+            return 1 // Keep at 1, don't go to 0 - phase transition will handle the reset
           }
           
           return prev - 1
