@@ -177,7 +177,7 @@ export default function Running({ config, onReset }: RunningProps) {
   useEffect(() => {
     let interval: NodeJS.Timeout
 
-    if (isRunning && config.isTimeBased && timeRemaining > 0) {
+    if (isRunning && config.isTimeBased) {
       interval = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
